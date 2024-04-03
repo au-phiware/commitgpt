@@ -1,0 +1,301 @@
+<Inputs>
+{DIFF}
+</Inputs>
+
+<Instructions Structure>
+1. Provide context on what a good git commit message should contain, including:
+   - A brief summary of the changes made
+   - Additional details on the changes if needed
+   - A reference to any relevant issues or pull requests
+2. Include the {DIFF} variable, demarcated by XML tags
+3. Provide step-by-step instructions for the assistant to follow to write the commit message based
+on the diff provided
+   - Direct the AI to aim for a commit message body between 5-15 sentences long
+   - Instruct the AI to wrap the final commit message (subject line and body) in <commit-message> tags
+</Instructions Structure>
+
+<Instructions>
+
+Here is the diff for the code changes you are committing:
+
+<diff>
+%s
+</diff>
+
+Please carefully review the diff above.
+
+In a <thinkthrough> section, analyse the changes in detail, considering:
+
+- Analyse the overall purpose and context of the changes
+- Identify any sensitive information like API keys, passwords, or personal data that should not be included in a commit
+- Check if the diff includes large files over 50MB that may be better suited for Git Large File Storage (LFS)
+- Note the specific modifications made to each file, function, class, variable etc.
+- Consider the reasoning behind any architectural or implementation choices
+- Identify any limitations, future TODOs, or other relevant notes about the changes
+
+<commit-message-instructions>
+If the diff does not contain sensitive information or large files, write a clear and concise commit message explaining the changes, following these style guidelines:
+
+- Use a short and descriptive subject line of 50 characters or less
+- Capitalize the first letter of the subject line
+- Use the imperative mood in the subject line (e.g. "Introduce feature" not "Introduced feature")
+- Do not end the subject line with a period
+- Separate the subject line from the body with a blank line
+- Wrap the body at 72 characters
+- Use the body to explain what and why, not just how
+- Use the body to explain:
+  - The high-level motivation and context of the changes
+  - What the changes actually are, at a high level
+  - The rationale behind significant decisions
+- Maintain a professional and positive tone; avoid humour or casual language
+
+<scratchpad>
+1. Review the diff carefully to understand the scope of the changes made
+2. Summarize the key changes in a concise one-liner of less than 50 characters
+3. Add 5-15 sentences with additional context on the changes and the reasoning behind them
+</scratchpad>
+
+Write out your complete commit message (subject line and body) inside <commit-message> tags. Make sure to include a blank line between the subject line and body.
+</commit-message-instructions>
+
+<sensitive-info-instructions>
+If the diff contains sensitive information like API keys, passwords, auth tokens, or personal data:
+
+- Do NOT include this information in the commit message
+- Instead, output a message wrapped in <sensitive-info-warning> tags identifying the potential exposure
+- Suggest removing the sensitive information from the diff and re-committing
+</sensitive-info-instructions>
+
+<large-files-instructions>
+If the diff contains files larger than 50MB:
+
+- Do NOT commit these files directly to the repo
+- Instead, output a message wrapped in <large-files-warning> tags identifying the oversized files
+- Suggest using Git LFS for those large files and link to setup instructions: https://git-lfs.github.com
+</large-files-instructions>
+
+</Instructions>
+
+<Examples>
+
+<example>
+<diff>
+diff --git a/src/main/java/com/example/MyClass.java b/src/main/java/com/example/MyClass.java
+index 34c6f64..9f3a73e 100644
+--- a/src/main/java/com/example/MyClass.java
++++ b/src/main/java/com/example/MyClass.java
+@@ -5,6 +5,7 @@ public class MyClass {
+     private String password = "password123";
+ 
+     public void myMethod() {
+         System.out.println("Hello, world!");
++        System.out.println("Goodbye!");
+     }
+ }
+</diff>
+<sensitive-info-warning>
+Warning: The diff contains sensitive information:
+- Line 5: Hardcoded password found in the code
+
+Please remove the sensitive information from the code and commit again.
+</sensitive-info-warning>
+</example>
+<example>
+<diff>
+diff --git a/data/large_file.bin b/data/large_file.bin
+new file mode 100644
+index 0000000..c1b1e4c
+--- /dev/null
++++ b/data/large_file.bin
+@@ -0,0 +1 @@
++[120MB of binary data]
+</diff>
+<large-files-warning>
+Warning: The diff contains files larger than 50MB:
+- data/large_file.bin (120MB)
+
+Consider using Git Large File Storage (LFS) for these files. Learn more at https://git-lfs.github.com
+</large-files-warning>
+</example>
+<example>
+<diff>
+diff --git a/helpers.go b/helpers.go
+index 6c649da..935c937 100644
+--- a/helpers.go
++++ b/helpers.go
+@@ -12,6 +12,11 @@ func AssertExpectedCalls(t testing.TB, mocks ...any) {
+		continue
+	}
+
++		if mock, ok := key.(interface{ AssertExpectedCalls(testing.TB) }); ok {
++			mock.AssertExpectedCalls(t)
++			continue
++		}
++
+	mock, ok := registry[key]
+	if !ok {
+		t.Fatalf("mock not found: %T", key)
+<diff>
+<commit-message>
+feat: support custom AssertExpectedCalls implementation
+
+Prior to this change, a mock can be anything AssertExpectedCalls cannot.
+
+This change allows a mock to hook in and override the
+AssertExpectedCalls behaviour for whatever reason.
+</commit-message>
+</example>
+<example>
+<diff>
+diff --git a/interval.go b/interval.go
+index d7a971c..c9e16f7 100644
+--- a/interval.go
++++ b/interval.go
+@@ -14,25 +14,26 @@ type Stoppable interface {
+ }
+ 
+ type intervalWorker struct {
+-	stopChan chan<- bool
+-	doneChan <-chan bool
++	stopChan chan<- struct{}
++	doneChan <-chan struct{}
+ 	once     *sync.Once
+ }
+ 
+ // Stop any future work, and wait for in-flight work to complete
+ func (w *intervalWorker) Stop() {
+ 	w.once.Do(func() {
+-		w.stopChan <- true // stop ticker
++		close(w.stopChan) // stop ticker
+ 	})
+ 	<-w.doneChan // wait
+ }
+ 
+ // Start running a function at an interval
+-func Start(ctx context.Context, interval time.Duration, fn TaskFn) *intervalWorker {
++func Start(ctx context.Context, interval time.Duration, fn TaskFn) (w *intervalWorker) {
+ 
+ 	ticker := time.NewTicker(interval)
+-	stopChan := make(chan bool)
+-	doneChan := make(chan bool)
++	stopChan := make(chan struct{})
++	doneChan := make(chan struct{})
++	w = &intervalWorker{stopChan, doneChan, &sync.Once{}}
+ 
+ 	// begin intervals in a new routine
+ 	go func() {
+@@ -40,9 +41,8 @@ func Start(ctx context.Context, interval time.Duration, fn TaskFn) *intervalWork
+ 		// ensure cleanup is done
+ 		defer func() {
+ 			ticker.Stop()
+-			doneChan <- true
+-			close(stopChan)
+ 			close(doneChan)
++			w.Stop()
+ 		}()
+ 
+ 		// begin
+@@ -69,7 +69,7 @@ func Start(ctx context.Context, interval time.Duration, fn TaskFn) *intervalWork
+ 
+ 	}()
+ 
+-	return &intervalWorker{stopChan, doneChan, &sync.Once{}}
++	return
+ 
+ }
+</diff>
+<commit-message>
+Simplify channel semantics
+
+Prior to this change, channels would spuriously send a value and not do
+anything with the received value.
+
+This change follows the pattern that the context package uses for the
+Done channel (although the implementation is more involved in the
+context package).  The closing of a channel is sufficient to signal to
+the receiver that it should continue.  The type is changed from bool to
+struct{}, which I beleive is zero bytes at runtime.  The cleanup
+function must now call Stop in order to ensure that the channel is
+closed and Stop must be called after closing the doneChan.
+</commit-message>
+</example>
+<example>
+<diff>
+diff --git a/internal/worker/workflowPlateType/worker.go b/internal/worker/workflowPlateType/worker.go
+index 6f2de30..c0e26c1 100644
+--- a/internal/worker/workflowPlateType/worker.go
++++ b/internal/worker/workflowPlateType/worker.go
+@@ -22,7 +22,7 @@ import (
+ )
+ 
+ const (
+-	IntervalKey = "/vehicle-id/plate-type-interval"
++	IntervalKey = "/vehicle-id/plate-type-worker-interval"
+ )
+ 
+ type WorkflowResult struct {
+</diff>
+<commit-message>
+Use consistent naming for worker interval parameter
+
+Prior to this change, the plate-type-interval parameter in SSM did not
+have the -worker-interval suffix like all the other parameters and did
+not match the path provided in cfn/ssm.yaml.
+
+This changes the name of the parameter used to lookup the PlateType
+worker's interval.
+</commit-message>
+</example>
+<example>
+<diff>
+diff --git a/internal/config/config.go b/internal/config/config.go
+index b639d62..df5a307 100644
+--- a/internal/config/config.go
++++ b/internal/config/config.go
+@@ -33,7 +33,7 @@ type Config struct {
+ 	Region                string   `env:"AWS_REGION"`
+ 	BuildVersion          string   `env:"VERSION" envDefault:"1.0"`
+ 	PactBrokerURL         string   `env:"PACT_BROKER_URL" envDefault:"https://pact-broker.ops.nxbos.cloud"`
+-	KnownNonHumanPrefixes []string `env:"KNOWN_NON_HUMAN_PREFIXES" envDefault:"https://github.com/thecompany/,bot@thecompany.com" envSeparator:","`
++	KnownNonHumanPrefixes []string `env:"KNOWN_NON_HUMAN_PREFIXES" envDefault:"github.com/thecompany/,bot@thecompany.com" envSeparator:","`
+ }
+ 
+ // NewConfig initialize configuration from env variables
+diff --git a/internal/service/outbound/ishuman/prefix_test.go b/internal/service/outbound/ishuman/prefix_test.go
+index 2df426e..cc1ea55 100644
+--- a/internal/service/outbound/ishuman/prefix_test.go
++++ b/internal/service/outbound/ishuman/prefix_test.go
+@@ -14,17 +14,17 @@ func TestKnownNonHumans(t *testing.T) {
+ 	}{
+ 		"not a known bot should return true (is human)": {
+ 			user: "human@domain.com",
+-			bots: []string{"https://github.com/thecompany/", "bot@thecompany.com"},
++			bots: []string{"github.com/thecompany/", "bot@thecompany.com"},
+ 			want: true,
+ 		},
+ 		"exact match to known bot return false (not human)": {
+ 			user: "bot@thecompany.com",
+-			bots: []string{"https://github.com/thecompany/", "bot@thecompany.com"},
++			bots: []string{"github.com/thecompany/", "bot@thecompany.com"},
+ 			want: false,
+ 		},
+ 		"prefix match to known bot return false (not human)": {
+-			user: "https://github.com/thecompany/robot",
+-			bots: []string{"https://github.com/thecompany/", "bot@thecompany.com"},
++			user: "github.com/thecompany/robot",
++			bots: []string{"github.com/thecompany/", "bot@thecompany.com"},
+ 			want: false,
+ 		},
+ 	}
+</diff>
+<commit-message>
+fix: drop http prefix from known user IDs
+
+Prior to this change, the FRB user ID was changed to a URI, however this
+triggers RFI detection on the WAF.
+
+This change drops the `https://` prefix of the known user IDs, which is
+sufficient to pass the WAF filtering rules.
+</commit-message>
+</example>
+</Examples>
