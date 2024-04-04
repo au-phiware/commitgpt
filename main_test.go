@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -119,6 +121,39 @@ AssertExpectedCalls behaviour for whatever reason.`,
 			}
 			if diff := cmp.Diff(tt.want3, got3); diff != "" {
 				t.Errorf("extractMessages() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func Test_TransformText(t *testing.T) {
+	tests := []struct {
+		name string
+		args string
+		want string
+	}{
+		{
+			name: "test 1",
+			args: `Warning: The diff contains sensitive information:
+- Line 5: Hardcoded password found in the code
+
+Please remove the sensitive information from the code and commit again.`,
+			want: `Warning: The diff contains sensitive information:
+
+- Line 5: Hardcoded password found in the code
+
+Please remove the sensitive information from the code and commit again.`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got strings.Builder
+			_, err := io.Copy(&got, TransformText(strings.NewReader(tt.args)))
+			if err != nil {
+				t.Error(err)
+			}
+			if diff := cmp.Diff(tt.want, got.String()); diff != "" {
+				t.Errorf("TransformText() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -21,9 +22,73 @@ var (
 	MaxTokens        = 2048
 )
 
+func TransformText(r io.Reader) (tx io.Reader) {
+	var w *io.PipeWriter
+	tx, w = io.Pipe()
+
+	go func() {
+		defer w.Close()
+		buf := make([]byte, 1024)
+		lookback := make([]byte, 2)
+
+		n, err := r.Read(lookback)
+		if err != nil {
+			if err != io.EOF {
+				w.CloseWithError(err)
+			}
+			return
+		}
+		if n == 1 {
+			n, err = r.Read(lookback[1:])
+			if err != nil {
+				if err != io.EOF {
+					w.CloseWithError(err)
+				}
+				return
+			}
+		}
+
+		_, err = w.Write(lookback)
+		if err != nil {
+			w.CloseWithError(err)
+			return
+		}
+
+		for {
+			n, err := r.Read(buf)
+			if err != nil {
+				if err != io.EOF {
+					w.CloseWithError(err)
+				}
+				break
+			}
+
+			var i int
+			for j := 0; j < n; j++ {
+				b := buf[j]
+				if string(lookback) == ":\n" && strings.ContainsRune("*+-", rune(b)) {
+					buf[j] = '\n'
+					_, err = w.Write(buf[i : j+1])
+					if err != nil {
+						w.CloseWithError(err)
+						return
+					}
+					buf[j] = b
+					i = j
+				}
+				lookback[0] = lookback[1]
+				lookback[1] = b
+			}
+			w.Write(buf[i:n])
+		}
+	}()
+
+	return
+}
+
 func formatWarning(warning, content string) string {
 	cmd := exec.Command("pandoc", "--columns=70", "-t", "gfm")
-	cmd.Stdin = strings.NewReader(content)
+	cmd.Stdin = TransformText(strings.NewReader(content))
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = os.Stderr
@@ -38,7 +103,7 @@ func formatWarning(warning, content string) string {
 
 func formatPlain(content string) string {
 	cmd := exec.Command("pandoc", "--columns=72", "-t", "gfm")
-	cmd.Stdin = strings.NewReader(content)
+	cmd.Stdin = TransformText(strings.NewReader(content))
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
