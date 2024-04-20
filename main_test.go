@@ -362,8 +362,8 @@ performance and resource utilization in various deployment scenarios.
 # Everything below it will be ignored.
 #
 # API ID: 12345
-# Input tokens: 10
-# Output tokens: 5
+# Input tokens: 10 ($0.0000)
+# Output tokens: 5 ($0.0000)
 #
 # Below is the thought process that created the above message.
 The changes in the provided diff appear to be related to the

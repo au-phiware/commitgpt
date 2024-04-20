@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -20,6 +21,9 @@ var (
 	AnthropicVersion = "2023-06-01"
 	Model            = "claude-3-haiku-20240307"
 	MaxTokens        = 2048
+
+	MillionInputTokensUnitPrice  = 0.25
+	MillionOutputTokensUnitPrice = 1.25
 )
 
 func TransformText(r io.Reader) (tx io.Reader) {
@@ -210,8 +214,8 @@ func makeAPICall(diff string) (_ string, err error) {
 	response.WriteString("# Everything below it will be ignored.\n")
 	response.WriteString("#\n")
 	response.WriteString(fmt.Sprintf("# API ID: %s\n", apiResponse.Id))
-	response.WriteString(fmt.Sprintf("# Input tokens: %d\n", apiResponse.Usage.InputTokens))
-	response.WriteString(fmt.Sprintf("# Output tokens: %d\n", apiResponse.Usage.OutputTokens))
+	response.WriteString(fmt.Sprintf("# Input tokens: %d ($%.4f)\n", apiResponse.Usage.InputTokens, float64(apiResponse.Usage.InputTokens)*MillionInputTokensUnitPrice/1e6))
+	response.WriteString(fmt.Sprintf("# Output tokens: %d ($%.4f)\n", apiResponse.Usage.OutputTokens, float64(apiResponse.Usage.OutputTokens)*MillionOutputTokensUnitPrice/1e6))
 	response.WriteString("#\n")
 
 	if thought != "" {
@@ -293,6 +297,11 @@ func handleVerboseContent(content string) string {
 func main() {
 	commitMsgFile := os.Args[1]
 	commitSource := os.Args[2]
+
+	skip := os.Getenv("SKIP_PREPARE_COMMIT_MSG")
+	if v, err := strconv.ParseBool(skip); skip != "" && (err != nil || v) {
+		os.Exit(0)
+	}
 
 	if _, err := os.Stat(commitMsgFile); os.IsNotExist(err) {
 		os.Exit(0)
