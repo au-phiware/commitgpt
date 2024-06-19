@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -328,11 +329,33 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if apiResponse != "" {
-		err := os.WriteFile(commitMsgFile, []byte(apiResponse+"\n"+trailer), 0644)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
+	if apiResponse == "" {
+		os.Exit(0)
+	}
+	err = os.WriteFile(commitMsgFile, []byte(apiResponse+"\n"+trailer), 0644)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	logDir := os.Getenv("ANTHROPIC_LOG_DIR")
+	if logDir == "" {
+		os.Exit(0)
+	}
+	err = os.MkdirAll(logDir, 0755)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(0)
+	}
+	treeHash, err := exec.Command("git", "write-tree").Output()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(0)
+	}
+	treeHash = bytes.TrimSpace(treeHash)
+	logFile := filepath.Join(logDir, fmt.Sprintf("%s.log", treeHash))
+	err = os.WriteFile(logFile, []byte(apiResponse+"\n"+trailer), 0644)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(0)
 	}
 }

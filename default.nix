@@ -21,6 +21,7 @@ pkgs.buildGoModule rec {
   postInstall = ''
     wrapProgram $out/bin/commitgpt \
       --set PATH ${pkgs.lib.makeBinPath buildInputs} \
+      --run 'export ANTHROPIC_LOG_DIR="$HOME/.config/anthropic/logs"' \
       --run 'export ANTHROPIC_API_KEY="$(${pkgs.libsecret}/bin/secret-tool lookup anthropic-api-key commitgpt)"'
   '';
 
