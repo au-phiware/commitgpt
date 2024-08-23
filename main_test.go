@@ -447,7 +447,7 @@ the application’s flexibility and configurability.
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			defer newHTTPTestServer(t, tt.args)()
-			got, err := makeAPICall(tt.args)
+			got, err := makeAPICall("main", tt.args)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("makeAPICall() mismatch (-want +got):\n%s", diff)
 			}
@@ -503,7 +503,7 @@ func newHTTPTestServer(t *testing.T, diff string) func() {
 		if !ok {
 			t.Errorf("unexpected content type: %T", message["content"])
 		}
-		if content != fmt.Sprintf(promptData, diff) {
+		if content != fmt.Sprintf(promptData, "main", diff) {
 			t.Errorf("unexpected content: %s", content)
 		}
 		w.Header().Set("Content-Type", "application/json")

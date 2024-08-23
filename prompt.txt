@@ -1,4 +1,5 @@
 <Inputs>
+{BRANCH}
 {DIFF}
 </Inputs>
 
@@ -7,6 +8,7 @@
    - A brief summary of the changes made
    - Additional details on the changes if needed
    - A reference to any relevant issues or pull requests
+   - Follow 'conventional commits' style for consistent commit messages
 2. Include the {DIFF} variable, demarcated by XML tags
 3. Provide step-by-step instructions for the assistant to follow to write the commit message based
 on the diff provided
@@ -79,6 +81,9 @@ If the diff contains files larger than 50MB:
 <Examples>
 
 <example>
+<branch>
+main
+</branch>
 <diff>
 diff --git a/src/main/java/com/example/MyClass.java b/src/main/java/com/example/MyClass.java
 index 34c6f64..9f3a73e 100644
@@ -100,7 +105,11 @@ Warning: The diff contains sensitive information:
 Please remove the sensitive information from the code and commit again.
 </sensitive-info-warning>
 </example>
+
 <example>
+<branch>
+main
+</branch>
 <diff>
 diff --git a/data/large_file.bin b/data/large_file.bin
 new file mode 100644
@@ -117,7 +126,11 @@ Warning: The diff contains files larger than 50MB:
 Consider using Git Large File Storage (LFS) for these files. Learn more at https://git-lfs.github.com
 </large-files-warning>
 </example>
+
 <example>
+<branch>
+feat/assert-expected-calls
+</branch>
 <diff>
 diff --git a/helpers.go b/helpers.go
 index 6c649da..935c937 100644
@@ -145,7 +158,11 @@ This change allows a mock to hook in and override the
 AssertExpectedCalls behaviour for whatever reason.
 </commit-message>
 </example>
+
 <example>
+<branch>
+ABC-123/fix/interval-worker
+</branch>
 <diff>
 diff --git a/interval.go b/interval.go
 index d7a971c..c9e16f7 100644
@@ -205,7 +222,7 @@ index d7a971c..c9e16f7 100644
  }
 </diff>
 <commit-message>
-Simplify channel semantics
+fix: simplify channel semantics (ABC-123)
 
 Prior to this change, channels would spuriously send a value and not do
 anything with the received value.
@@ -219,7 +236,11 @@ function must now call Stop in order to ensure that the channel is
 closed and Stop must be called after closing the doneChan.
 </commit-message>
 </example>
+
 <example>
+<branch>
+ABC-123/fix/plate-type-interval
+</branch>
 <diff>
 diff --git a/internal/worker/workflowPlateType/worker.go b/internal/worker/workflowPlateType/worker.go
 index 6f2de30..c0e26c1 100644
@@ -236,7 +257,7 @@ index 6f2de30..c0e26c1 100644
  type WorkflowResult struct {
 </diff>
 <commit-message>
-Use consistent naming for worker interval parameter
+fix: use consistent naming for worker interval parameter (ABC-123)
 
 Prior to this change, the plate-type-interval parameter in SSM did not
 have the -worker-interval suffix like all the other parameters and did
@@ -246,7 +267,11 @@ This changes the name of the parameter used to lookup the PlateType
 worker's interval.
 </commit-message>
 </example>
+
 <example>
+<branch>
+FRB-984/fix/known-non-humans
+</branch>
 <diff>
 diff --git a/internal/config/config.go b/internal/config/config.go
 index b639d62..df5a307 100644
@@ -289,7 +314,7 @@ index 2df426e..cc1ea55 100644
  	}
 </diff>
 <commit-message>
-fix: drop http prefix from known user IDs
+fix: drop http prefix from known user IDs (FRB-984)
 
 Prior to this change, the FRB user ID was changed to a URI, however this
 triggers RFI detection on the WAF.
@@ -298,4 +323,5 @@ This change drops the `https://` prefix of the known user IDs, which is
 sufficient to pass the WAF filtering rules.
 </commit-message>
 </example>
+
 </Examples>

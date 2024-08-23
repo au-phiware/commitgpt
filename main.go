@@ -119,13 +119,14 @@ func formatPlain(content string) string {
 	return fmt.Sprintf("%s\n", out.String())
 }
 
-func makeAPICall(diff string) (_ string, err error) {
+func makeAPICall(branch, diff string) (_ string, err error) {
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
 		return
 	}
 
-	content := fmt.Sprintf(promptData, diff)
+	branch = strings.TrimSpace(branch)
+	content := fmt.Sprintf(promptData, branch, diff)
 
 	data := map[string]interface{}{
 		"model":      Model,
@@ -319,12 +320,17 @@ func main() {
 	}
 	trailer := handleVerboseContent(string(content))
 
+	branch, err := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD").Output()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 	diff, err := exec.Command("git", "diff", "--cached").Output()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	apiResponse, err := makeAPICall(string(diff))
+	apiResponse, err := makeAPICall(string(branch), string(diff))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
