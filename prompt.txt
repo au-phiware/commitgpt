@@ -3,7 +3,7 @@
 {DIFF}
 </Inputs>
 
-<Instructions Structure>
+<Instructions-Structure>
 1. Provide context on what a good git commit message should contain, including:
    - A brief summary of the changes made
    - Additional details on the changes if needed
@@ -14,69 +14,7 @@
 on the diff provided
    - Direct the AI to aim for a commit message body between 5-15 sentences long
    - Instruct the AI to wrap the final commit message (subject line and body) in <commit-message> tags
-</Instructions Structure>
-
-<Instructions>
-
-Here is the diff for the code changes you are committing:
-
-<diff>
-%s
-</diff>
-
-Please carefully review the diff above.
-
-In a <thinkthrough> section, analyse the changes in detail, considering:
-
-- Analyse the overall purpose and context of the changes
-- Identify any sensitive information like API keys, passwords, or personal data that should not be included in a commit
-- Check if the diff includes large files over 50MB that may be better suited for Git Large File Storage (LFS)
-- Note the specific modifications made to each file, function, class, variable etc.
-- Consider the reasoning behind any architectural or implementation choices
-- Identify any limitations, future TODOs, or other relevant notes about the changes
-
-<commit-message-instructions>
-If the diff does not contain sensitive information or large files, write a clear and concise commit message explaining the changes, following these style guidelines:
-
-- Use a short and descriptive subject line of 50 characters or less
-- Capitalize the first letter of the subject line
-- Use the imperative mood in the subject line (e.g. "Introduce feature" not "Introduced feature")
-- Do not end the subject line with a period
-- Separate the subject line from the body with a blank line
-- Wrap the body at 72 characters
-- Use the body to explain what and why, not just how
-- Use the body to explain:
-  - The high-level motivation and context of the changes
-  - What the changes actually are, at a high level
-  - The rationale behind significant decisions
-- Maintain a professional and positive tone; avoid humour or casual language
-
-<scratchpad>
-1. Review the diff carefully to understand the scope of the changes made
-2. Summarize the key changes in a concise one-liner of less than 50 characters
-3. Add 5-15 sentences with additional context on the changes and the reasoning behind them
-</scratchpad>
-
-Write out your complete commit message (subject line and body) inside <commit-message> tags. Make sure to include a blank line between the subject line and body.
-</commit-message-instructions>
-
-<sensitive-info-instructions>
-If the diff contains sensitive information like API keys, passwords, auth tokens, or personal data:
-
-- Do NOT include this information in the commit message
-- Instead, output a message wrapped in <sensitive-info-warning> tags identifying the potential exposure
-- Suggest removing the sensitive information from the diff and re-committing
-</sensitive-info-instructions>
-
-<large-files-instructions>
-If the diff contains files larger than 50MB:
-
-- Do NOT commit these files directly to the repo
-- Instead, output a message wrapped in <large-files-warning> tags identifying the oversized files
-- Suggest using Git LFS for those large files and link to setup instructions: https://git-lfs.github.com
-</large-files-instructions>
-
-</Instructions>
+</Instructions-Structure>
 
 <Examples>
 
@@ -325,3 +263,68 @@ sufficient to pass the WAF filtering rules.
 </example>
 
 </Examples>
+
+<Instructions>
+
+Here is the diff on the branch for the code changes you are committing:
+
+<branch>
+%s
+</branch>
+<diff>
+%s
+</diff>
+
+Please carefully review the diff above.
+
+In a <thinkthrough> section, analyse the changes in detail, considering:
+
+- Analyse the overall purpose and context of the changes
+- Identify any sensitive information like API keys, passwords, or personal data that should not be included in a commit
+- Check if the diff includes large files over 50MB that may be better suited for Git Large File Storage (LFS)
+- Note the specific modifications made to each file, function, class, variable etc.
+- Consider the reasoning behind any architectural or implementation choices
+- Identify any limitations, future TODOs, or other relevant notes about the changes
+
+<sensitive-info-instructions>
+If the diff contains sensitive information like API keys, passwords, auth tokens, or personal data:
+
+- Do NOT include this information in the commit message
+- Instead, output a message wrapped in <sensitive-info-warning> tags identifying the potential exposure
+- Suggest removing the sensitive information from the diff and re-committing
+</sensitive-info-instructions>
+
+<large-files-instructions>
+If the diff contains files larger than 50MB:
+
+- Do NOT commit these files directly to the repo
+- Instead, output a message wrapped in <large-files-warning> tags identifying the oversized files
+- Suggest using Git LFS for those large files and link to setup instructions: https://git-lfs.github.com
+</large-files-instructions>
+
+<commit-message-instructions>
+If the diff does not contain sensitive information or large files, write a clear and concise commit message explaining the changes, following these style guidelines:
+
+- Use a short and descriptive subject line of 50 characters or less
+- Use 'conventional commits' style, e.g. "feat:", "fix:", "chore:", etc.
+- Use the imperative mood in the subject line (e.g. "introduce feature" not "added feature")
+- Do not end the subject line with a period
+- Separate the subject line from the body with a blank line
+- Wrap the body at 72 characters
+- Use the body to explain what and why, not just how
+- Use the body to explain:
+  - The high-level motivation and context of the changes
+  - What the changes actually are, at a high level
+  - The rationale behind significant decisions
+- Maintain a professional and positive tone; avoid humour or casual language
+
+<scratchpad>
+1. Review the diff carefully to understand the scope of the changes made
+2. Summarize the key changes in a concise one-liner of less than 50 characters
+3. Add 5-15 sentences with additional context on the changes and the reasoning behind them
+</scratchpad>
+
+Write out your complete commit message (subject line and body) inside <commit-message> tags. Make sure to include a blank line between the subject line and body.
+</commit-message-instructions>
+
+</Instructions>
